@@ -1,0 +1,96 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: streaming
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streaming
+  labels:
+    app: streaming
+    owner: "RedbackRacing"
+  annotations:
+    email: "info@redbackracing63.com"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streaming
+  template:
+    metadata:
+      labels:
+        app: streaming
+    spec:
+      serviceAccountName: streaming
+      containers:
+        - name: streaming
+          image: "redbackracing/streaming_service:v3.0.0"
+          imagePullPolicy: "IfNotPresent"
+          env:
+            - name: REDIS_URL
+              value: "redis://bitnami-redis-master.redis.svc.cluster.local:6379"
+            - name: USE_WS_INCOMING
+              value: "true"
+          resources:
+            requests:
+              memory: 16Mi
+              cpu: 50m
+            limits:
+              memory: 128Mi
+              cpu: 100m
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            runAsUser: 1000
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          startupProbe:
+            httpGet:
+              path: /healthcheck
+              port: 8000
+            failureThreshold: 60
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: streaming-service
+  labels:
+    app: streaming
+spec:
+  selector:
+    app: streaming
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: streaming-socket-service
+  labels:
+    app: streaming
+  annotations:
+    ignore-check.kube-linter.io/exposed-services: "need to expose ports to external app"
+spec:
+  selector:
+    app: streaming
+  type: NodePort
+  ports:
+    - port: 12000
+      targetPort: 12000
+      protocol: TCP
