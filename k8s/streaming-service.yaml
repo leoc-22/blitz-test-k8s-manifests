@@ -26,7 +26,7 @@ spec:
       serviceAccountName: streaming
       containers:
         - name: streaming
-          image: "redbackracing/streaming_service:v3.0.0"
+          image: 91
           imagePullPolicy: "IfNotPresent"
           env:
             - name: REDIS_URL
