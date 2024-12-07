@@ -1,4 +1,4 @@
-# blitz-test-k8s-manifests
+# blitz-test
 
 test project for blitz
 
